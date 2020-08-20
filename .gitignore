@@ -120,4 +120,4 @@ work_dirs/
 *.sh~
 
 # private
-rpf.yaml
+rpf*.yaml

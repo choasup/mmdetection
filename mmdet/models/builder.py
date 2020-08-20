@@ -63,5 +63,9 @@ def build_loss(cfg):
 
 
 def build_detector(cfg, train_cfg=None, test_cfg=None):
-    """Build detector."""
+    """
+    Build detector:
+        build_backbone, build_neck, build_head in the detector.
+        eg. mmdet.models.detectors.single_stage.SingleStageDetector.
+    """
     return build(cfg, DETECTORS, dict(train_cfg=train_cfg, test_cfg=test_cfg))
