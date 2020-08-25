@@ -13,9 +13,10 @@ python3 tools/analyze_logs.py plot_curve \
     $LOG1 \
     $LOG2 \
     $LOG3 \
+    $LOG4 \
     $LOG5 \
     --keys bbox_mAP \
-    --legend retina fcos tanner1 tanner2 \
+    --legend retina fcos tanner1 tanner2 tanner3 \
     --out mAP.pdf
 
 python3 tools/analyze_logs.py cal_train_time /youtu-xlab4/choasliu/research/logs/_algo-fcos_r50_caffe_fpn_4x4_1x_coco.py/20200820_114118.log.json
