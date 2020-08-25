@@ -11,5 +11,5 @@ LOGS=/youtu/xlab-team4/choasliu/research/logs/${ALGO////-}
 #    --work-dir $LOGS
 
 CHECKPOINT=$LOGS/latest.pth
-python3 tools/test.py $CONFIG $CHECKPOINT \
-    --show-dir $LOGS
+sh tools/dist_test.sh $CONFIG $CHECKPOINT \
+    8 --out results.pkl --eval bbox --options "classwise=True"
