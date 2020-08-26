@@ -20,7 +20,7 @@ python3 tools/analyze_logs.py plot_curve \
     $LOG6 \
     $LOG7 \
     --keys bbox_mAP \
-    --legend retina fcos tanner1x5e-3.b4 tanner2xe-2.b4 tanner1xe-2.b8 tanner1xe-2.b4 tanners1x2e-2.b4 \
+    --legend retina fcos tanner-1x-5e-3.b4 tanner-2x-e-2.b4 tanner-1x-e-2.b8 tanner-1x-e-2.b4 tanner-1x-2e-2.b4 \
     --out mAP.pdf
 
 python3 tools/analyze_logs.py cal_train_time /youtu-xlab4/choasliu/research/logs/_algo-fcos_r50_caffe_fpn_4x4_1x_coco.py/20200820_114118.log.json
