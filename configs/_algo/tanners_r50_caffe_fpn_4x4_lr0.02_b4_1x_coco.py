@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/datasets/coco_detection.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
 # model settings
@@ -125,15 +125,15 @@ data = dict(
 
 # optimizer
 optimizer = dict(
-    lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
+    lr=0.02, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
-#lr_config = dict(
-#    policy='step',
-#    warmup='linear',
-#    warmup_iters=500,
-#    warmup_ratio=0.001,
-#    step=[8, 11])
-#total_epochs = 12
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[8, 11])
+total_epochs = 12
