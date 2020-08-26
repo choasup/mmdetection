@@ -63,7 +63,7 @@ class TannerHead(nn.Module):
                                           **kwargs)
             name = type(sub_head).__name__
             for key, value in loss.items():
-                losses["sub_{}_{}".format(name, key)] = value
+                losses["sub{}_{}_{}".format(idx, name, key)] = value
 
         if proposal_cfg is None:
             return losses
