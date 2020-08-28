@@ -471,7 +471,7 @@ class CameraDatasetNew(CustomDataset):
                     plt.grid(True)
                     plt.plot(r_array, p_array, 'b-', label='IOU=0.05')
                     plt.legend(loc='lower left')
-                    plt.savefig('/youtu-xlab4/choasliu/research/mmdetection/')
+                    plt.savefig('/youtu/xlab-team4/choasliu/research/mmdetection/camera.pdf')
                                         
 
                     results_per_category = []
