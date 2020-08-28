@@ -15,7 +15,8 @@ class TannerHead(nn.Module):
     def __init__(self, num_heads, num_classes, **kwargs):
         super(TannerHead, self).__init__()        
         self.num_classes = num_classes
-        
+        self.test_cfg = kwargs['test_cfg']
+
         self.heads = nn.ModuleList()
         for idx in range(num_heads):
             sub_head = kwargs["sub_bbox_head_{}".format(idx + 1)]
@@ -78,9 +79,10 @@ class TannerHead(nn.Module):
         return [outs]
 
     def get_bboxes(self, outs, img_metas, cfg=None, rescale=None):
+        cfg = self.test_cfg if cfg is None else cfg
         bboxes = []
         labels = []
-        for sub_head, out in zip(self.heads, outs): 
+        for idx, (sub_head, out) in enumerate(zip(self.heads, outs)): 
             sub_bbox_list = sub_head.get_bboxes(*out, img_metas, rescale=rescale)       
             for bbox, label in sub_bbox_list:
                 bboxes.append(bbox)
@@ -88,7 +90,22 @@ class TannerHead(nn.Module):
         
         cat_bboxes = torch.cat(bboxes)
         cat_labels = torch.cat(labels) 
-        bbox_list = [(cat_bboxes, cat_labels)]
+
+        # multi-head nms
+        mlvl_bboxes = cat_bboxes[:, :4]       
+        value_scores = cat_bboxes[:, -1:].reshape(-1)
+        mlvl_scores = torch.zeros([cat_bboxes.shape[0], self.num_classes + 1]).to(device=mlvl_bboxes.device)
+        
+        index_x = torch.where(cat_labels > -1)[0]
+        index_y = cat_labels
+        index = (index_x, index_y)
+        mlvl_scores[index] = value_scores
+
+        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
+                                        cfg.score_thr, cfg.nms,
+                                        cfg.max_per_img)
+        
+        bbox_list = [(det_bboxes, det_labels)]
         return bbox_list
          
     def aug_test(self, imgs, img_metas, rescale=False):

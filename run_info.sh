@@ -11,6 +11,11 @@ LOG8=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners-fcos_r50_caffe_fpn_4x4
 LOG9=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners-retina_r50_caffe_fpn_4x4_lr0.02_b4_1x_coco.py/20200826_204321.log.json
 LOG10=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners_r50_caffe_fpn_4x4_lr0.02_b4_1x_coco.py/20200826_182117.log.json
 
+#LOG11=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners-fcos_r50_caffe_fpn_4x4_lr0.01_b4_wb_1x_coco.py/20200827_123738.log.json
+#LOG12=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners-retina_r50_caffe_fpn_4x4_lr0.01_b4_wb_1x_coco.py/20200827_123818.log.json
+LOG13=/youtu-xlab4/choasliu/research/logs/_algo-w1-tanners_r50_caffe_fpn_4x4_lr0.01_b4_wb_1x_coco.py/20200827_123804.log.json
+LOG14=/youtu/xlab-team4/choasliu/research/logs/_algo-w1-tanners-multi_r50_caffe_fpn_4x4_syncbn_lr0.02_b4_1x_coco.py/20200827_193206.log.json
+
 #python3 tools/analyze_logs.py plot_curve \
 #    $LOG5 \
 #    --keys sub_FCOSHead_loss_cls sub_FCOSHead_loss_bbox \
@@ -22,8 +27,10 @@ python3 tools/analyze_logs.py plot_curve \
     $LOG8 \
     $LOG9 \
     $LOG10 \
+    $LOG13 \
+    $LOG14 \
     --keys bbox_mAP \
-    --legend retina-w1 fcos-w1 tanner-fcos tanner-retina tanner-1x-2e-2.b4-w1 \
+    --legend retina-w1 fcos-w1 tanner-fcos tanner-retina tanner-1x-2e-2.b4-w1 tanners-mutli-1x-1e-2-b4-wb tanners-mutli-1x-1e-2-b4-synbn  \
     --out mAP.pdf
 
 #python3 tools/analyze_logs.py cal_train_time /youtu-xlab4/choasliu/research/logs/_algo-fcos_r50_caffe_fpn_4x4_1x_coco.py/20200820_114118.log.json
