@@ -3,6 +3,7 @@ dataset_type = 'CameraDatasetNew'
 train_data_root = '/youtu/xlab-team4/share/datasets/camera/all/'
 val_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
 test_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
+#test_data_root = '/youtu/xlab-team4/share/datasets/unlabel_camera/raws/data-20200828-162606/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -47,6 +48,7 @@ data = dict(
     test=dict(
         type=dataset_type,
         ann_file=test_data_root + 'val_test.json',
+        #ann_file=test_data_root + 'raw.json',
         img_prefix=test_data_root + 'images/',
-        pipeline=test_pipeline))
+        pipeline=test_pipeline),)
 evaluation = dict(interval=1, metric='bbox')
