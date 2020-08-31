@@ -41,7 +41,7 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[8, 16, 32, 64]),
         bbox_head=dict(
             type='Shared2FCBBoxHead',
             in_channels=256,
@@ -99,6 +99,7 @@ test_pipeline = [
 ]
 classes = ['camera_gun', 'camera_round', 'camera_other','support_w', 'support_overpass', 'support_dragon', 'support_h']
 data = dict(
+    #train=[dict(classes=classes, pipeline=train_pipeline),dict(classes=classes, pipeline=train_pipeline)],
     train=dict(classes=classes, pipeline=train_pipeline),
     val=dict(classes=classes, pipeline=test_pipeline),
     test=dict(classes=None, pipeline=test_pipeline))
