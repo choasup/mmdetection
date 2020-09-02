@@ -6,25 +6,23 @@ _base_ = [
 # model settings
 model = dict(
     type='TANNERS',
-    pretrained='open-mmlab://detectron/resnet50_caffe',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='caffe'),
+        style='pytorch'),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         start_level=1,
-        add_extra_convs=True,
-        extra_convs_on_inputs=False,  # use P5
-        num_outs=5,
-        relu_before_extra_convs=True),
+        add_extra_convs='on_input',
+        num_outs=5),
     bbox_head=dict(
         type='TannerHead',
         num_heads=2,
@@ -74,8 +72,7 @@ model = dict(
                 gamma=2.0,
                 alpha=0.25,
                 loss_weight=1.0),
-            loss_bbox=dict(type='L1Loss', loss_weight=1.0)),
-            ))
+            loss_bbox=dict(type='L1Loss', loss_weight=1.0)),))
 
 # training and testing settings
 train_cfg = dict(
@@ -95,46 +92,10 @@ test_cfg = dict(
     nms=dict(type='nms', iou_threshold=0.5),
     max_per_img=100)
 
-# data pipeline
-img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
-
 # optimizer
-optimizer = dict(
-    lr=0.02, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+#optimizer_config = dict(
+#    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
 # learning policy
 lr_config = dict(
