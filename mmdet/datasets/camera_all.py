@@ -519,6 +519,59 @@ class CameraDatasetNew(CustomDataset):
                 eval_results[f'{metric}_mAP_copypaste'] = (
                     f'{ap[0]:.3f} {ap[1]:.3f} {ap[2]:.3f} {ap[3]:.3f} '
                     f'{ap[4]:.3f} {ap[5]:.3f}')
+
+                # badcase infos
+                self.analyze_badcase(cocoEval)
+
         if tmp_dir is not None:
             tmp_dir.cleanup()
         return eval_results
+
+    def analyze_badcase(self, cocoEval):
+        from tqdm import tqdm
+        import os
+        import cv2
+        import shutil
+        logs = '/youtu/xlab-team4/choasliu/camera_infos'
+        if os.path.exists(logs):
+            shutil.rmtree(logs)
+
+        os.makedirs(logs)
+
+        category_id = 1
+        thresh = 0.5
+        for item in tqdm(cocoEval.evalImgs):
+            if item is None:
+                continue
+            if item['category_id'] != category_id:
+                continue
+            # un recall
+            unrecall = 0
+            for idx in item['gtMatches'][0]:
+                if int(idx) == 0:
+                    unrecall = 1
+                    break
+
+                score = item['dtScores'][item['dtIds'].index(int(idx))]
+                if score < thresh:
+                    unrecall = 1
+                    break
+
+            if unrecall:
+                img_info = cocoEval.cocoDt.loadImgs([item['image_id']])[0]
+                dts = cocoEval.cocoDt.loadAnns(item['dtIds'])
+                gts = cocoEval.cocoGt.loadAnns(item['gtIds'])
+                img = cv2.imread(os.path.join(self.img_prefix, img_info['file_name']))
+                for dt in dts:
+                    x, y, w, h = int(dt['bbox'][0]), int(dt['bbox'][1]), int(dt['bbox'][2]), int(dt['bbox'][3])
+                    if dt['score'] < 0.1:
+                        continue
+                    cv2.rectangle(img, (x - 2, y - 2), (x + w + 2, y + h + 2), (0, 0, 255), 1)
+                    cv2.putText(img, "{:.2f}".format(dt['score']), (x, y - 20), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
+
+                for gt in gts:
+                    x, y, w, h = int(gt['bbox'][0]), int(gt['bbox'][1]), int(gt['bbox'][2]), int(gt['bbox'][3])
+                    cv2.rectangle(img, (x - 2, y - 2), (x + w + 2, y + h + 2), (0, 255, 0), 1)
+
+                dst = os.path.join(logs, img_info['file_name'])
+                cv2.imwrite(dst, img)
