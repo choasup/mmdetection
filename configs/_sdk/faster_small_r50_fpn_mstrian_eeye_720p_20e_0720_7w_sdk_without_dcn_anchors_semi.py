@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/camera_detection_merge.py',
+    '../_base_/datasets/camera_detection_pesudo.py',
     '../_base_/schedules/schedule_20e.py', '../_base_/default_runtime.py'
 ]
 norm_cfg = dict(type='SyncBN', requires_grad=True)

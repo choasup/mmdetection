@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Scale, normal_init
 
-from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms
+from mmdet.core import distance2bbox, force_fp32, multi_apply, multiclass_nms, multihead_nms
 from ..builder import HEADS, build_loss, build_head
 from .anchor_free_head import AnchorFreeHead
 from .base_dense_head import BaseDenseHead
@@ -83,6 +83,8 @@ class TannerHead(nn.Module):
         bboxes = []
         labels = []
         for idx, (sub_head, out) in enumerate(zip(self.heads, outs)): 
+            if idx == 1:
+                continue
             sub_bbox_list = sub_head.get_bboxes(*out, img_metas, rescale=rescale)       
             for bbox, label in sub_bbox_list:
                 bboxes.append(bbox)
@@ -91,21 +93,34 @@ class TannerHead(nn.Module):
         cat_bboxes = torch.cat(bboxes)
         cat_labels = torch.cat(labels) 
 
-        # multi-head nms
-        mlvl_bboxes = cat_bboxes[:, :4]       
-        value_scores = cat_bboxes[:, -1:].reshape(-1)
-        mlvl_scores = torch.zeros([cat_bboxes.shape[0], self.num_classes + 1]).to(device=mlvl_bboxes.device)
-        
-        index_x = torch.where(cat_labels > -1)[0]
-        index_y = cat_labels
-        index = (index_x, index_y)
-        mlvl_scores[index] = value_scores
+        # nms output
+        if True:
+            # multi-head nms
+            mlvl_bboxes = cat_bboxes[:, :4]       
+            value_scores = cat_bboxes[:, -1:].reshape(-1)
+            mlvl_scores = torch.zeros([cat_bboxes.shape[0], self.num_classes + 1]).to(device=mlvl_bboxes.device)
+            
+            index_x = torch.where(cat_labels > -1)[0]
+            index_y = cat_labels
+            index = (index_x, index_y)
+            mlvl_scores[index] = value_scores
 
-        det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                        cfg.score_thr, cfg.nms,
-                                        cfg.max_per_img)
+           
+            if False:
+                det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
+                                                        cfg.score_thr, cfg.nms,
+                                                        cfg.max_per_img)
+            if True:
+                det_bboxes, det_labels = multihead_nms(mlvl_bboxes, mlvl_scores,
+                                                        cfg.score_thr, cfg.nms,
+                                                        cfg.max_per_img)      
+  
+            bbox_list = [(det_bboxes, det_labels)]
         
-        bbox_list = [(det_bboxes, det_labels)]
+        # no-nms output
+        if False:
+            bbox_list = [(cat_bboxes, cat_labels)]
+ 
         return bbox_list
          
     def aug_test(self, imgs, img_metas, rescale=False):

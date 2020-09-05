@@ -4,6 +4,7 @@ train_data_root = '/youtu/xlab-team4/share/datasets/camera/all/'
 val_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
 #test_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
 test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/'
+#test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/raws/20200828/'
 
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -49,6 +50,7 @@ data = dict(
         type=dataset_type,
         #ann_file=test_data_root + 'val_test.json',
         ann_file=test_data_root + 'merge_20200828-20200829-20200830.json',
+        #ann_file=test_data_root + '20200828.json',
         img_prefix=test_data_root,
         pipeline=test_pipeline),)
 evaluation = dict(interval=1, metric='bbox')
