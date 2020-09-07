@@ -562,12 +562,14 @@ class CameraDatasetNew(CustomDataset):
                 dts = cocoEval.cocoDt.loadAnns(item['dtIds'])
                 gts = cocoEval.cocoGt.loadAnns(item['gtIds'])
                 img = cv2.imread(os.path.join(self.img_prefix, img_info['file_name']))
+                gap = 30 
                 for dt in dts:
                     x, y, w, h = int(dt['bbox'][0]), int(dt['bbox'][1]), int(dt['bbox'][2]), int(dt['bbox'][3])
-                    if dt['score'] < 0.1:
+                    if dt['score'] < 0.5:
                         continue
                     cv2.rectangle(img, (x - 2, y - 2), (x + w + 2, y + h + 2), (0, 0, 255), 1)
-                    cv2.putText(img, "{:.2f}".format(dt['score']), (x, y - 20), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(img, "{:.2f}".format(dt['score']), (x, gap), cv2.FONT_HERSHEY_TRIPLEX, 1, (0, 0, 255), 2)
+                    gap += 30
 
                 for gt in gts:
                     x, y, w, h = int(gt['bbox'][0]), int(gt['bbox'][1]), int(gt['bbox'][2]), int(gt['bbox'][3])

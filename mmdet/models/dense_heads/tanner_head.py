@@ -20,7 +20,7 @@ class TannerHead(nn.Module):
         self.heads = nn.ModuleList()
         for idx in range(num_heads):
             sub_head = kwargs["sub_bbox_head_{}".format(idx + 1)]
-            sub_head.update(train_cfg=kwargs['train_cfg'])
+            sub_head.update(train_cfg=kwargs['train_cfg']["train_cfg_sub_{}".format(idx + 1)])
             sub_head.update(test_cfg=kwargs['test_cfg']) 
             self.heads.append(build_head(sub_head))
  
