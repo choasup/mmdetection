@@ -497,6 +497,19 @@ class CocoDataset(CustomDataset):
                     # precision: (iou, recall, cls, area range, max dets)
                     assert len(self.cat_ids) == precisions.shape[2]
 
+                    # TODO.draw recall & precision
+                    import matplotlib.pyplot as plt
+                    p_array = precisions[0, :, 0, 0, -1]
+                    r_array = np.arange(0.0, 1.01, 0.01)
+                    plt.xlabel('recall')
+                    plt.ylabel('precison')    
+                    plt.xlim(0, 1.0)
+                    plt.ylim(0, 1.01)
+                    plt.grid(True)
+                    plt.plot(r_array, p_array, 'b-', label='IOU=0.5')
+                    plt.legend(loc='lower left')
+                    plt.savefig('/youtu/xlab-team4/choasliu/research/mmdetection/cocoAP.pdf')
+
                     results_per_category = []
                     for idx, catId in enumerate(self.cat_ids):
                         # area range index 0: all area ranges

@@ -140,41 +140,39 @@ def high_nms(bboxes, scores, threshold = 0.6):
     return torch.tensor(keep)
 
 
-#def high_nms(bboxes, scores, threshold = 0.6):
-#    """Pure Torch NMS.(isn't used in this code)"""
-#    x1 = bboxes[:,0]
-#    y1 = bboxes[:,1]
-#    x2 = bboxes[:,2]
-#    y2 = bboxes[:,3]
-#    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-#    _, order = scores.sort(0, descending = True)
-#    keep = []
-#
-#    while order.numel():
-#        if order.numel() == 1:
-#            i = order.item()
-#            keep.append(i)
-#            break
-#        
-#        i = order[0].item()
-#        xx1 = x1[order[1:]].clamp(min=x1[i])
-#        yy1 = y1[order[1:]].clamp(min=y1[i])
-#        xx2 = x2[order[1:]].clamp(max=x2[i])
-#        yy2 = y2[order[1:]].clamp(max=y2[i])
-#        inter = (xx2 - xx1 + 1).clamp(min=0) * (yy2 - yy1 + 1).clamp(min=0)
-#        iou = inter / (areas[i] + areas[order[1:]] - inter )
-#        idx = (iou <= threshold).nonzero().squeeze()
-#        
-#        # Give high scores
-#        idh = (iou > threshold).nonzero().squeeze()
-#        if idh.numel() > 0:
-#            keep.append(i)
-#
-#        if idx.numel() == 0:
-#            break
-#        order = order[idx + 1]
-#    
-#    return torch.tensor(keep)
+def cross_nms(bboxes, scores, threshold = 0.6):
+    """Pure Torch NMS.(isn't used in this code)"""
+    x1 = bboxes[:,0]
+    y1 = bboxes[:,1]
+    x2 = bboxes[:,2]
+    y2 = bboxes[:,3]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    _, order = scores.sort(0, descending = True)
+    keep = []
+ 
+    while order.numel():
+        if order.numel() == 1:
+            break
+
+        i = order[0].item()
+        xx1 = x1[order[1:]].clamp(min=x1[i])
+        yy1 = y1[order[1:]].clamp(min=y1[i])
+        xx2 = x2[order[1:]].clamp(max=x2[i])
+        yy2 = y2[order[1:]].clamp(max=y2[i])
+        inter = (xx2 - xx1 + 1).clamp(min=0) * (yy2 - yy1 + 1).clamp(min=0)
+        iou = inter / (areas[i] + areas[order[1:]] - inter )
+        idx = (iou <= threshold).nonzero().squeeze()
+        
+        # Give high scores
+        idh = (iou > 0.9).nonzero().squeeze()
+        if idh.numel() > 2:
+            keep.append(i)
+
+        if idx.numel() == 0:
+            break
+        order = order[idx + 1]
+    
+    return torch.tensor(keep)
 
 def merge_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
     nms_cfg_ = nms_cfg.copy()
@@ -189,13 +187,22 @@ def merge_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
     #nms_type = nms_cfg_.pop('type', 'nms')
     #nms_op = eval(nms_type)
     #dets, keep = high_nms(boxes_for_nms, scores, **nms_cfg_)
+   
+    #keep = high_nms(boxes_for_nms, scores)
+    #boxes = boxes[keep]
+    #scores = scores[keep]
 
-    keep = high_nms(boxes_for_nms, scores)
-
-    
-    boxes = boxes[keep]
-    scores = scores[keep]
-
+    #"""
+    keep = cross_nms(boxes_for_nms, scores)
+    if len(keep) != 0:
+        boxes = boxes[keep]
+        scores = scores[keep]
+    else:
+        keep = torch.tensor([0])
+        boxes = boxes[keep]
+        scores = torch.tensor([0.0]).to(device=scores.device)
+    #"""
+ 
     return torch.cat([boxes, scores[:, None]], -1), keep
 
 def multihead_nms(multi_bboxes,

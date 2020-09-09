@@ -20,7 +20,8 @@ class TannerHead(nn.Module):
         self.heads = nn.ModuleList()
         for idx in range(num_heads):
             sub_head = kwargs["sub_bbox_head_{}".format(idx + 1)]
-            sub_head.update(train_cfg=kwargs['train_cfg']["train_cfg_sub_{}".format(idx + 1)])
+            if kwargs['train_cfg'] != None:
+                sub_head.update(train_cfg=kwargs['train_cfg']["train_cfg_sub_{}".format(idx + 1)])
             sub_head.update(test_cfg=kwargs['test_cfg']) 
             self.heads.append(build_head(sub_head))
  
@@ -83,8 +84,8 @@ class TannerHead(nn.Module):
         bboxes = []
         labels = []
         for idx, (sub_head, out) in enumerate(zip(self.heads, outs)): 
-            if idx == 1:
-                continue
+            #if idx != 4:
+            #    continue
             sub_bbox_list = sub_head.get_bboxes(*out, img_metas, rescale=rescale)       
             for bbox, label in sub_bbox_list:
                 bboxes.append(bbox)
