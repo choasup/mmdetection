@@ -553,7 +553,7 @@ class CocoDataset(CustomDataset):
                     f'{ap[4]:.3f} {ap[5]:.3f}')
 
                 # badcase infos
-                self.analyze_badcase(cocoEval)
+                #self.analyze_badcase(cocoEval)
 
         if tmp_dir is not None:
             tmp_dir.cleanup()
