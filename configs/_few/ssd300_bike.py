@@ -1,10 +1,10 @@
 _base_ = [
-    '../_base_/models/ssd300.py', '../_base_/datasets/coco_detection.py',
+    '../_base_/models/ssd300.py', '../_base_/datasets/bike_detection.py',
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/youtu/xlab-team4/choasliu/nonmotor/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
@@ -43,20 +43,25 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
+classes=list(['bike'])
+
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=3,
     train=dict(
+        classes=classes,
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
+            classes=classes,
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file=data_root + 'annotations/train_bike.json',
+            img_prefix=data_root + 'images/',
             pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    val=dict(classes=classes, pipeline=test_pipeline),
+    test=dict(classes=classes, pipeline=test_pipeline))
+
 # optimizer
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict(_delete_=True)
