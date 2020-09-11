@@ -9,6 +9,11 @@ from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
 from mmdet.core.bbox.assigners.detr_assigner import build_matcher
 
+from mmdet.core.utils.dist_utils import (is_dist_avail_and_initialized,
+                                         get_world_size, accuracy, interpolate)
+from mmdet.core.utils import box_ops
+
+
 @HEADS.register_module()
 class DetrHead(nn.Module):
     """Simplest RoI head, with only two fc layers for classification and
@@ -32,9 +37,15 @@ class DetrHead(nn.Module):
                      use_sigmoid=False,
                      loss_weight=1.0),
                  loss_bbox=dict(
-                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
+                     type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
+                 hidden_dim=256,
+                 aux_loss=True):
         super(DetrHead, self).__init__()
         assert with_cls or with_reg
+        self.with_cls = with_cls
+        self.with_reg = with_reg
+        self.num_classes = num_classes
+        self.aux_loss = aux_loss
 
         self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
@@ -45,7 +56,7 @@ class DetrHead(nn.Module):
 
         weight_dict = {'loss_ce': 1, 'loss_bbox': 5}
         weight_dict['loss_giou'] = 2
-        if args.masks:
+        if False:
             weight_dict["loss_mask"] = 1
         weight_dict["loss_dice"] = 1
         # TODO this is a hack
@@ -56,9 +67,9 @@ class DetrHead(nn.Module):
             weight_dict.update(aux_weight_dict)
 
         losses = ['labels', 'boxes', 'cardinality']
-        if args.masks:
+        if False:
             losses += ["masks"]
-        self.loss = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
+        self.criterion = SetCriterion(self.num_classes, matcher=self.matcher, weight_dict=weight_dict,
                                  eos_coef=0.1, losses=losses)
 
     def init_weights(self):
@@ -66,46 +77,52 @@ class DetrHead(nn.Module):
         if self.with_cls:
             nn.init.normal_(self.class_embed.weight, 0, 0.01)
             nn.init.constant_(self.class_embed.bias, 0)
-        if self.with_reg:
-            nn.init.normal_(self.bbox_embed.weight, 0, 0.001)
-            nn.init.constant_(self.bbox_embed.bias, 0)
+        #if self.with_reg:
+        #    nn.init.normal_(self.bbox_embed.weight, 0, 0.001)
+        #    nn.init.constant_(self.bbox_embed.bias, 0)
 
     @auto_fp16()
     def forward(self, hs):
         outputs_class = self.class_embed(hs)
         outputs_coord = self.bbox_embed(hs).sigmoid()
-        return outputs_class, outputs_coord
+ 
+        out = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
+        if self.aux_loss:
+            out['aux_outputs'] = self._set_aux_loss(outputs_class, outputs_coord)
+
+        return out
 
     def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
                            pos_gt_labels, cfg):
-        num_pos = pos_bboxes.size(0)
-        num_neg = neg_bboxes.size(0)
-        num_samples = num_pos + num_neg
+        #num_pos = pos_bboxes.size(0)
+        #num_neg = neg_bboxes.size(0)
+        #num_samples = num_pos + num_neg
 
-        # original implementation uses new_zeros since BG are set to be 0
-        # now use empty & fill because BG cat_id = num_classes,
-        # FG cat_id = [0, num_classes-1]
-        labels = pos_bboxes.new_full((num_samples, ),
-                                     self.num_classes,
-                                     dtype=torch.long)
-        label_weights = pos_bboxes.new_zeros(num_samples)
-        bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
-        bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
-        if num_pos > 0:
-            labels[:num_pos] = pos_gt_labels
-            pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
-            label_weights[:num_pos] = pos_weight
-            if not self.reg_decoded_bbox:
-                pos_bbox_targets = self.bbox_coder.encode(
-                    pos_bboxes, pos_gt_bboxes)
-            else:
-                pos_bbox_targets = pos_gt_bboxes
-            bbox_targets[:num_pos, :] = pos_bbox_targets
-            bbox_weights[:num_pos, :] = 1
-        if num_neg > 0:
-            label_weights[-num_neg:] = 1.0
+        ## original implementation uses new_zeros since BG are set to be 0
+        ## now use empty & fill because BG cat_id = num_classes,
+        ## FG cat_id = [0, num_classes-1]
+        #labels = pos_bboxes.new_full((num_samples, ),
+        #                             self.num_classes,
+        #                             dtype=torch.long)
+        #label_weights = pos_bboxes.new_zeros(num_samples)
+        #bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
+        #bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
+        #if num_pos > 0:
+        #    labels[:num_pos] = pos_gt_labels
+        #    pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
+        #    label_weights[:num_pos] = pos_weight
+        #    if not self.reg_decoded_bbox:
+        #        pos_bbox_targets = self.bbox_coder.encode(
+        #            pos_bboxes, pos_gt_bboxes)
+        #    else:
+        #        pos_bbox_targets = pos_gt_bboxes
+        #    bbox_targets[:num_pos, :] = pos_bbox_targets
+        #    bbox_weights[:num_pos, :] = 1
+        #if num_neg > 0:
+        #    label_weights[-num_neg:] = 1.0
 
-        return labels, label_weights, bbox_targets, bbox_weights
+        #return labels, label_weights, bbox_targets, bbox_weights
+        raise NotImplementedError
 
     def get_targets(self,
                     sampling_results,
@@ -113,37 +130,32 @@ class DetrHead(nn.Module):
                     gt_labels,
                     rcnn_train_cfg,
                     concat=True):
-        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
-        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
-        pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
-        pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
-        labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self._get_target_single,
-            pos_bboxes_list,
-            neg_bboxes_list,
-            pos_gt_bboxes_list,
-            pos_gt_labels_list,
-            cfg=rcnn_train_cfg)
+        #pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
+        #neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        #pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
+        #pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+        #labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+        #    self._get_target_single,
+        #    pos_bboxes_list,
+        #    neg_bboxes_list,
+        #    pos_gt_bboxes_list,
+        #    pos_gt_labels_list,
+        #    cfg=rcnn_train_cfg)
 
-        if concat:
-            labels = torch.cat(labels, 0)
-            label_weights = torch.cat(label_weights, 0)
-            bbox_targets = torch.cat(bbox_targets, 0)
-            bbox_weights = torch.cat(bbox_weights, 0)
-        return labels, label_weights, bbox_targets, bbox_weights
+        #if concat:
+        #    labels = torch.cat(labels, 0)
+        #    label_weights = torch.cat(label_weights, 0)
+        #    bbox_targets = torch.cat(bbox_targets, 0)
+        #    bbox_weights = torch.cat(bbox_weights, 0)
+        #return labels, label_weights, bbox_targets, bbox_weights
+        raise NotImplementedError 
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
-             cls_score,
-             bbox_pred,
+             outputs,
              rois,
-             labels,
-             label_weights,
-             bbox_targets,
-             bbox_weights,
-             reduction_override=None):
-        losses = dict()
-        return losses
+             targets):
+        loss_dict = self.criterion(outputs, targets) 
+        return loss_dict
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def get_bboxes(self,
@@ -154,35 +166,36 @@ class DetrHead(nn.Module):
                    scale_factor,
                    rescale=False,
                    cfg=None):
-        if isinstance(cls_score, list):
-            cls_score = sum(cls_score) / float(len(cls_score))
-        scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
+        #if isinstance(cls_score, list):
+        #    cls_score = sum(cls_score) / float(len(cls_score))
+        #scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
-        if bbox_pred is not None:
-            bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_shape)
-        else:
-            bboxes = rois[:, 1:].clone()
-            if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+        #if bbox_pred is not None:
+        #    bboxes = self.bbox_coder.decode(
+        #        rois[:, 1:], bbox_pred, max_shape=img_shape)
+        #else:
+        #    bboxes = rois[:, 1:].clone()
+        #    if img_shape is not None:
+        #        bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+        #        bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
-        if rescale and bboxes.size(0) > 0:
-            if isinstance(scale_factor, float):
-                bboxes /= scale_factor
-            else:
-                scale_factor = bboxes.new_tensor(scale_factor)
-                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
-                          scale_factor).view(bboxes.size()[0], -1)
+        #if rescale and bboxes.size(0) > 0:
+        #    if isinstance(scale_factor, float):
+        #        bboxes /= scale_factor
+        #    else:
+        #        scale_factor = bboxes.new_tensor(scale_factor)
+        #        bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
+        #                  scale_factor).view(bboxes.size()[0], -1)
 
-        if cfg is None:
-            return bboxes, scores
-        else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+        #if cfg is None:
+        #    return bboxes, scores
+        #else:
+        #    det_bboxes, det_labels = multiclass_nms(bboxes, scores,
+        #                                            cfg.score_thr, cfg.nms,
+        #                                            cfg.max_per_img)
 
-            return det_bboxes, det_labels
+        #    return det_bboxes, det_labels
+        raise NotImplementedError
 
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
@@ -236,32 +249,33 @@ class DetrHead(nn.Module):
             >>>                    pos_is_gts, img_metas)
             >>> print(bboxes_list)
         """
-        img_ids = rois[:, 0].long().unique(sorted=True)
-        assert img_ids.numel() <= len(img_metas)
+        #img_ids = rois[:, 0].long().unique(sorted=True)
+        #assert img_ids.numel() <= len(img_metas)
 
-        bboxes_list = []
-        for i in range(len(img_metas)):
-            inds = torch.nonzero(
-                rois[:, 0] == i, as_tuple=False).squeeze(dim=1)
-            num_rois = inds.numel()
+        #bboxes_list = []
+        #for i in range(len(img_metas)):
+        #    inds = torch.nonzero(
+        #        rois[:, 0] == i, as_tuple=False).squeeze(dim=1)
+        #    num_rois = inds.numel()
 
-            bboxes_ = rois[inds, 1:]
-            label_ = labels[inds]
-            bbox_pred_ = bbox_preds[inds]
-            img_meta_ = img_metas[i]
-            pos_is_gts_ = pos_is_gts[i]
+        #    bboxes_ = rois[inds, 1:]
+        #    label_ = labels[inds]
+        #    bbox_pred_ = bbox_preds[inds]
+        #    img_meta_ = img_metas[i]
+        #    pos_is_gts_ = pos_is_gts[i]
 
-            bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
-                                           img_meta_)
+        #    bboxes = self.regress_by_class(bboxes_, label_, bbox_pred_,
+        #                                   img_meta_)
 
-            # filter gt bboxes
-            pos_keep = 1 - pos_is_gts_
-            keep_inds = pos_is_gts_.new_ones(num_rois)
-            keep_inds[:len(pos_is_gts_)] = pos_keep
+        #    # filter gt bboxes
+        #    pos_keep = 1 - pos_is_gts_
+        #    keep_inds = pos_is_gts_.new_ones(num_rois)
+        #    keep_inds[:len(pos_is_gts_)] = pos_keep
 
-            bboxes_list.append(bboxes[keep_inds.type(torch.bool)])
+        #    bboxes_list.append(bboxes[keep_inds.type(torch.bool)])
 
-        return bboxes_list
+        #return bboxes_list
+        raise NotImplementedError
 
     @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
@@ -276,23 +290,32 @@ class DetrHead(nn.Module):
         Returns:
             Tensor: Regressed bboxes, the same shape as input rois.
         """
-        assert rois.size(1) == 4 or rois.size(1) == 5, repr(rois.shape)
+        #assert rois.size(1) == 4 or rois.size(1) == 5, repr(rois.shape)
 
-        if not self.reg_class_agnostic:
-            label = label * 4
-            inds = torch.stack((label, label + 1, label + 2, label + 3), 1)
-            bbox_pred = torch.gather(bbox_pred, 1, inds)
-        assert bbox_pred.size(1) == 4
+        #if not self.reg_class_agnostic:
+        #    label = label * 4
+        #    inds = torch.stack((label, label + 1, label + 2, label + 3), 1)
+        #    bbox_pred = torch.gather(bbox_pred, 1, inds)
+        #assert bbox_pred.size(1) == 4
 
-        if rois.size(1) == 4:
-            new_rois = self.bbox_coder.decode(
-                rois, bbox_pred, max_shape=img_meta['img_shape'])
-        else:
-            bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
-            new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
+        #if rois.size(1) == 4:
+        #    new_rois = self.bbox_coder.decode(
+        #        rois, bbox_pred, max_shape=img_meta['img_shape'])
+        #else:
+        #    bboxes = self.bbox_coder.decode(
+        #        rois[:, 1:], bbox_pred, max_shape=img_meta['img_shape'])
+        #    new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
-        return new_rois
+        #return new_rois
+        raise NotImplementedError
+
+    @torch.jit.unused
+    def _set_aux_loss(self, outputs_class, outputs_coord):
+        # this is a workaround to make torchscript happy, as torchscript
+        # doesn't support dictionary with non-homogeneous values, such
+        # as a dict having both a Tensor and a list.
+        return [{'pred_logits': a, 'pred_boxes': b}
+                for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
 class SetCriterion(nn.Module):
     """ This class computes the loss for DETR.
