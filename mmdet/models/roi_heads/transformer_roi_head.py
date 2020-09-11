@@ -8,7 +8,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 from .roi_extractors.transformer_roi_extractor import build_transformer
 from .roi_extractors.position_encoding import build_position_encoding
-from mmdet.core.bbox.assigners.detr_assigner import build_matcher
+
 
 @HEADS.register_module()
 class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -30,36 +30,20 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             shared_head=shared_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg) 
-        from IPython import embed; embed()
+
         self.transformer = build_transformer() 
         self.position_encoding = build_position_encoding()
-        self.matcher = build_matcher()
+        
         # hidden_dim: 256
         self.input_proj = nn.Conv2d(bbox_head.in_channels, 256, kernel_size=1)
         self.query_embed = nn.Embedding(100, 256)
 
-    def init_assigner_sampler(self):
-        """Initialize assigner and sampler."""
-        self.bbox_assigner = None
-        self.bbox_sampler = None
-        if self.train_cfg:
-            self.bbox_assigner = build_assigner(self.train_cfg.assigner)
-            self.bbox_sampler = build_sampler(
-                self.train_cfg.sampler, context=self)
-
-    def init_bbox_head(self, bbox_roi_extractor, bbox_head):
+    def init_bbox_head(self, bbox_head):
         """Initialize ``bbox_head``"""
-        self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         self.bbox_head = build_head(bbox_head)
 
-    def init_mask_head(self, mask_roi_extractor, mask_head):
+    def init_mask_head(self, mask_head):
         """Initialize ``mask_head``"""
-        if mask_roi_extractor is not None:
-            self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
-            self.share_roi_extractor = False
-        else:
-            self.share_roi_extractor = True
-            self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = build_head(mask_head)
 
     def init_weights(self, pretrained):
@@ -69,15 +53,13 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             pretrained (str, optional): Path to pre-trained weights.
                 Defaults to None.
         """
-        if self.with_shared_head:
-            self.shared_head.init_weights(pretrained=pretrained)
+        nn.init.normal_(self.input_proj.weight, 0, 0.01)
+        nn.init.normal_(self.query_embed.weight, 0, 0.01)
+
         if self.with_bbox:
-            self.bbox_roi_extractor.init_weights()
             self.bbox_head.init_weights()
         if self.with_mask:
             self.mask_head.init_weights()
-            if not self.share_roi_extractor:
-                self.mask_roi_extractor.init_weights()
 
     def forward_dummy(self, x, proposals):
         """Dummy forward function."""

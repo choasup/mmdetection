@@ -7,7 +7,7 @@ from mmdet.core import (auto_fp16, build_bbox_coder, force_fp32, multi_apply,
                         multiclass_nms)
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.losses import accuracy
-
+from mmdet.core.bbox.assigners.detr_assigner import build_matcher
 
 @HEADS.register_module()
 class DetrHead(nn.Module):
@@ -35,46 +35,40 @@ class DetrHead(nn.Module):
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0)):
         super(DetrHead, self).__init__()
         assert with_cls or with_reg
-        self.with_avg_pool = with_avg_pool
-        self.with_cls = with_cls
-        self.with_reg = with_reg
-        self.roi_feat_size = _pair(roi_feat_size)
-        self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
-        self.in_channels = in_channels
-        self.num_classes = num_classes
-        self.reg_class_agnostic = reg_class_agnostic
-        self.reg_decoded_bbox = reg_decoded_bbox
-        self.fp16_enabled = False
-
-        self.bbox_coder = build_bbox_coder(bbox_coder) 
-
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
-
-        in_channels = self.in_channels
-        if self.with_avg_pool:
-            self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
-        else:
-            in_channels *= self.roi_feat_area
-        if self.with_cls:
-            # need to add background class
-            self.fc_cls = nn.Linear(in_channels, num_classes + 1)
-        if self.with_reg:
-            out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_reg = nn.Linear(in_channels, out_dim_reg)
-        self.debug_imgs = None
 
         self.class_embed = nn.Linear(hidden_dim, num_classes + 1)
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        self.init_loss()
+
+    def init_loss(self):
+        self.matcher = build_matcher()
+
+        weight_dict = {'loss_ce': 1, 'loss_bbox': 5}
+        weight_dict['loss_giou'] = 2
+        if args.masks:
+            weight_dict["loss_mask"] = 1
+        weight_dict["loss_dice"] = 1
+        # TODO this is a hack
+        if True:
+            aux_weight_dict = {}
+            for i in range(6 - 1):
+                aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items()})
+            weight_dict.update(aux_weight_dict)
+
+        losses = ['labels', 'boxes', 'cardinality']
+        if args.masks:
+            losses += ["masks"]
+        self.loss = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
+                                 eos_coef=0.1, losses=losses)
 
     def init_weights(self):
         # conv layers are already initialized by ConvModule
         if self.with_cls:
-            nn.init.normal_(self.fc_cls.weight, 0, 0.01)
-            nn.init.constant_(self.fc_cls.bias, 0)
+            nn.init.normal_(self.class_embed.weight, 0, 0.01)
+            nn.init.constant_(self.class_embed.bias, 0)
         if self.with_reg:
-            nn.init.normal_(self.fc_reg.weight, 0, 0.001)
-            nn.init.constant_(self.fc_reg.bias, 0)
+            nn.init.normal_(self.bbox_embed.weight, 0, 0.001)
+            nn.init.constant_(self.bbox_embed.bias, 0)
 
     @auto_fp16()
     def forward(self, hs):
