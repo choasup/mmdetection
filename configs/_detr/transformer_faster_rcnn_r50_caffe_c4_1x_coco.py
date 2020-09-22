@@ -2,6 +2,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+find_unused_parameters = True
 norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
     type='FasterRCNN',
@@ -86,8 +87,8 @@ train_cfg = dict(
     rpn_proposal=dict(
         nms_across_levels=False,
         nms_pre=12000,
-        nms_post=2000,
-        max_num=2000,
+        nms_post=128, # 2000
+        max_num=128, # 128
         nms_thr=0.7,
         min_bbox_size=0),
     rcnn=dict(

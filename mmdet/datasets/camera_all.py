@@ -35,7 +35,6 @@ class CameraDatasetNew(CustomDataset):
         """
 
         self.coco = COCO(ann_file)
-        #from IPython import embed; embed()
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()
@@ -44,7 +43,6 @@ class CameraDatasetNew(CustomDataset):
             info = self.coco.load_imgs([i])[0]
             info['filename'] = info['file_name']
             data_infos.append(info)
-        #from IPython import embed; embed()
         return data_infos
 
     def get_ann_info(self, idx):
@@ -102,7 +100,6 @@ class CameraDatasetNew(CustomDataset):
         """
 
         ids = set()
-        #from IPython import embed; embed()
         for i, class_id in enumerate(self.cat_ids):
             ids |= set(self.coco.cat_img_map[class_id])
         self.img_ids = list(ids)
@@ -226,7 +223,6 @@ class CameraDatasetNew(CustomDataset):
                     data['score'] = float(bboxes[i][4])
                     data['category_id'] = self.cat_ids[label]
                     json_results.append(data)
-        #from IPython import embed; embed()
         return json_results
 
     def _segm2json(self, results):

@@ -48,7 +48,9 @@ class Transformer(nn.Module):
         bs, c, h, w = src.shape
         src = src.flatten(2).permute(2, 0, 1)
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+        
+        #query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+        query_embed = torch.cat(query_embed, 1)
         mask = mask.flatten(1)
 
         tgt = torch.zeros_like(query_embed)

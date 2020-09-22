@@ -3,6 +3,7 @@ dataset_type = 'CameraDatasetNew'
 train_data_root = '/youtu/xlab-team4/share/datasets/camera/all/'
 val_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
 test_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
+test_data_root = '/youtu/xlab-team4/share/datasets/ken/'
 #test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/'
 #test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/raws/20200828/'
 
@@ -55,7 +56,7 @@ data = dict(
         #ann_file=test_data_root + 'merge_20200828-20200829-20200830.json',
         #ann_file=test_data_root + '20200828.json',
         #img_prefix=test_data_root + 'images/',
-        ann_file=train_data_root + 'annotations/train_0905_filter_subclass_8.json',
-        img_prefix=train_data_root + 'images/images/',
+        ann_file=test_data_root + 'ken_test_cat.json',
+        img_prefix=test_data_root + 'images/',
         pipeline=test_pipeline),)
 evaluation = dict(interval=1, metric='bbox')

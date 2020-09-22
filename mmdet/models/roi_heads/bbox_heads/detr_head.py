@@ -125,35 +125,23 @@ class DetrHead(nn.Module):
         raise NotImplementedError
 
     def get_targets(self,
-                    sampling_results,
                     gt_bboxes,
                     gt_labels,
-                    rcnn_train_cfg,
-                    concat=True):
-        #pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
-        #neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
-        #pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
-        #pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
-        #labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-        #    self._get_target_single,
-        #    pos_bboxes_list,
-        #    neg_bboxes_list,
-        #    pos_gt_bboxes_list,
-        #    pos_gt_labels_list,
-        #    cfg=rcnn_train_cfg)
-
-        #if concat:
-        #    labels = torch.cat(labels, 0)
-        #    label_weights = torch.cat(label_weights, 0)
-        #    bbox_targets = torch.cat(bbox_targets, 0)
-        #    bbox_weights = torch.cat(bbox_weights, 0)
-        #return labels, label_weights, bbox_targets, bbox_weights
-        raise NotImplementedError 
+                    img_metas,
+                    concat=False):
+        for idx, (label, box) in enumerate(zip(gt_labels, gt_bboxes)):
+            w = img_metas[idx]['pad_shape'][1]
+            h = img_metas[idx]['pad_shape'][0]
+            box = box / torch.tensor([w, h, w, h], device=box.device)
+            img_metas[idx]['labels'] = label
+            img_metas[idx]['boxes'] = box
+        return img_metas
 
     def loss(self,
              outputs,
              rois,
              targets):
+        
         loss_dict = self.criterion(outputs, targets) 
         return loss_dict
 

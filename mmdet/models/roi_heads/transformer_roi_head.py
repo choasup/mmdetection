@@ -37,6 +37,7 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # hidden_dim: 256
         self.input_proj = nn.Conv2d(bbox_head.in_channels, 256, kernel_size=1)
         self.query_embed = nn.Embedding(100, 256)
+        self.query_proj = nn.Linear(5, 256)
 
     def init_assigner_sampler(self):
         """Initialize assigner and sampler."""
@@ -44,6 +45,7 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
  
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize ``bbox_head``"""
+        self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         self.bbox_head = build_head(bbox_head)
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
@@ -128,14 +130,16 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # TODO: a more flexible way to decide which feature maps to use
         # pos_feats: torch.Size([2, 256, 76, 50])
         
+        #rois = bbox2roi([res[:, :4] for res in rois])
         #bbox_feats = self.bbox_roi_extractor(
-        #    x[:self.bbox_roi_extractor.num_inputs], rois)
-        #if self.with_shared_head:
-        #    bbox_feats = self.shared_head(bbox_feats)
-
+        #    x[:self.bbox_roi_extractor.num_inputs][0], rois)
+        rois_feats = []
+        for roi in rois:
+            rois_feats.append(self.query_proj(roi).unsqueeze(1))
+          
         src = x[0]
         pos, mask = self.position_encoding(src)
-        hs = self.transformer(self.input_proj(src), mask, self.query_embed.weight, pos)[0] 
+        hs = self.transformer(self.input_proj(src), mask, rois_feats, pos)[0] 
       
         bbox_results = self.bbox_head(hs) 
         return bbox_results
@@ -147,11 +151,10 @@ class TransformerRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # TODO. not the real rois 
         rois = proposal_list
         bbox_results = self._bbox_forward(x, rois)
-
-        # TODO. box need to normalize
-        for idx, (label, box) in enumerate(zip(gt_labels, gt_bboxes)):
-            img_metas[idx]['labels'] = label
-            img_metas[idx]['boxes'] = box
+        
+        targets = self.bbox_head.get_targets(gt_bboxes,
+                                             gt_labels,
+                                             img_metas)
 
         loss_bbox = self.bbox_head.loss(bbox_results,
                                         rois,

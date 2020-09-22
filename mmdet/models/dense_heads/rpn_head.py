@@ -165,4 +165,13 @@ class RPNHead(RPNTestMixin, AnchorHead):
         # TODO: remove the hard coded nms type
         nms_cfg = dict(type='nms', iou_threshold=cfg.nms_thr)
         dets, keep = batched_nms(proposals, scores, ids, nms_cfg)
-        return dets[:cfg.nms_post]
+       
+        # fixed for cfg.nms_post 
+        dets_post = dets[:cfg.nms_post]
+
+        #if len(dets_post) < cfg.nms_post:
+        #    dets_post = dets_post.reshape(1, 1, -1, 5)
+        #    pad = nn.ReplicationPad2d(padding=(0, 0, 0, cfg.nms_post))
+        #    dets_post = pad(dets_post)[:cfg.nms_post]
+
+        return dets_post

@@ -4,7 +4,8 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 
 LOGS=/youtu/xlab-team4/choasliu/research/logs/debug
 
-python3 tools/train.py $CONFIG --work-dir $LOGS
+#python3 tools/train.py $CONFIG --work-dir $LOGS --no-validate
 
-#sh tools/dist_train.sh $CONFIG \
-#    8 --work-dir $LOGS
+sh tools/dist_train.sh $CONFIG \
+    8 --work-dir $LOGS \
+    --no-validate
