@@ -374,6 +374,11 @@ class FCOSHead(AnchorFreeHead):
         # BG cat_id: num_class
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
         mlvl_centerness = torch.cat(mlvl_centerness)
+
+        # for matcher training        
+        if cfg.nms is None:
+            return mlvl_bboxes, mlvl_scores * mlvl_centerness.unsqueeze(1)
+
         det_bboxes, det_labels = multiclass_nms(
             mlvl_bboxes,
             mlvl_scores,

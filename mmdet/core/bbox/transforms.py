@@ -110,7 +110,7 @@ def bbox2result(bboxes, labels, num_classes):
             bboxes = bboxes.cpu().numpy()
             labels = labels.cpu().numpy()
         return [bboxes[labels == i, :] for i in range(num_classes)]
-
+        
 
 def distance2bbox(points, distance, max_shape=None):
     """Decode distance prediction to bounding box.

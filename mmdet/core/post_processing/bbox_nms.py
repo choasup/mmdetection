@@ -100,7 +100,7 @@ def std_nms(bboxes, scores, threshold = 0.5):
         order = order[idx + 1]
     return torch.tensor(keep)
 
-def high_nms(bboxes, scores, threshold = 0.6):
+def high_nms(bboxes, scores, threshold = 0.9):
     """Pure Torch NMS.(isn't used in this code)"""
     x1 = bboxes[:,0]
     y1 = bboxes[:,1]
@@ -115,16 +115,15 @@ def high_nms(bboxes, scores, threshold = 0.6):
             i = order.item()
             keep.append(i)
             break
-        else:
-            i = order[0].item()
-            keep.append(i)
+
+        i = order[0].item()
         xx1 = x1[order[1:]].clamp(min=x1[i])
         yy1 = y1[order[1:]].clamp(min=y1[i])
         xx2 = x2[order[1:]].clamp(max=x2[i])
         yy2 = y2[order[1:]].clamp(max=y2[i])
         inter = (xx2 - xx1 + 1).clamp(min=0) * (yy2 - yy1 + 1).clamp(min=0)
         iou = inter / (areas[i] + areas[order[1:]] - inter )
-        idx = (iou <= threshold).nonzero().squeeze()
+        idx = (iou <= 0.5).nonzero().squeeze()
 
         # update scores
         # part norm = 3, AP 36.0
@@ -133,10 +132,14 @@ def high_nms(bboxes, scores, threshold = 0.6):
         idh = (iou > threshold).nonzero().squeeze()
         if idh.numel() > 0:
             scores[i] = (scores[i] ** 2 + torch.norm(scores[order[idh + 1]], p=2) ** 2) ** (1.0 / 2)
+            keep.append(i)
  
         if idx.numel() == 0:
             break
         order = order[idx + 1]
+
+    if keep == []:
+        keep = [0]
     return torch.tensor(keep)
 
 
@@ -188,11 +191,11 @@ def merge_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
     #nms_op = eval(nms_type)
     #dets, keep = high_nms(boxes_for_nms, scores, **nms_cfg_)
    
-    #keep = high_nms(boxes_for_nms, scores)
-    #boxes = boxes[keep]
-    #scores = scores[keep]
+    keep = high_nms(boxes_for_nms, scores)
+    boxes = boxes[keep]
+    scores = scores[keep]
 
-    #"""
+    """
     keep = cross_nms(boxes_for_nms, scores)
     if len(keep) != 0:
         boxes = boxes[keep]
@@ -201,7 +204,7 @@ def merge_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
         keep = torch.tensor([0])
         boxes = boxes[keep]
         scores = torch.tensor([0.0]).to(device=scores.device)
-    #"""
+    """
  
     return torch.cat([boxes, scores[:, None]], -1), keep
 
