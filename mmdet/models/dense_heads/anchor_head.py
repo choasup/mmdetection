@@ -647,6 +647,10 @@ class AnchorHead(BaseDenseHead):
             # BG cat_id: num_class
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+
+        if cfg['nms'] is None:
+            return mlvl_bboxes, mlvl_scores
+  
         det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                 cfg.score_thr, cfg.nms,
                                                 cfg.max_per_img)

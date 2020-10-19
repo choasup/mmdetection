@@ -13,9 +13,11 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #LOGS=../logs/_algo-w1-mhnms-tanners-multi_r50_caffe_fpn_4x4_bn_lr0.02_b4_1x_coco.py
 #OUTPUT=../logs/debug-tanners
 
-CONFIG=configs/_algo/tanners-fcos.retina.reppoints.fovea.atss_r50_caffe_fpn_4x4_syncbn_lr0.02_b4_1x_coco.py
-LOGS=../logs/rpf-algo-w1-tanners-fcos.retina.reppoints.fovea.atss_r50_caffe_fpn_4x4_syncbn_lr0.02_b4_1x_coco.yaml
-OUTPUT=../logs/debug-tanners
+model=${1}
+
+CONFIG=configs/_algo/${model}.py
+LOGS=../logs/rpf-algo-w1-${model}.yaml
+OUTPUT=../logs/debug
 
 CHECKPOINT=$LOGS/latest.pth
 

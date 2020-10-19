@@ -124,9 +124,7 @@ class TannerHead(nn.Module):
             target['boxes'] = gt_box
             target['labels'] = gt_label
             targets.append(target)
-
-        #indices = self.matcher(outputs, targets)
-        
+ 
         loss_matcher = self.criterion(outputs, targets)
         losses.update(loss_matcher)
 
@@ -169,12 +167,12 @@ class TannerHead(nn.Module):
             index = (index_x, index_y)
             mlvl_scores[index] = value_scores
            
-            if False:
+            if True:
                 cfg.nms['iou_threshold'] = 0.5
                 det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
                                                         cfg.score_thr, cfg.nms,
                                                         cfg.max_per_img)
-            if True:
+            if False:
                 det_bboxes, det_labels = multihead_nms(mlvl_bboxes, mlvl_scores,
                                                         cfg.score_thr, cfg.nms,
                                                         cfg.max_per_img)      
