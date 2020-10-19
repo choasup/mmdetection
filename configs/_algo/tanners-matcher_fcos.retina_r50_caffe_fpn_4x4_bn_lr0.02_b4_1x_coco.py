@@ -77,7 +77,7 @@ train_cfg = dict(
         nms_pre=1000,
         min_bbox_size=0,
         score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
+        nms=None,
         max_per_img=20),
     train_cfg_sub_1=dict(
         assigner=dict(
