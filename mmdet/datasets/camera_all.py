@@ -362,7 +362,7 @@ class CameraDatasetNew(CustomDataset):
                  jsonfile_prefix=None,
                  classwise=False,
                  proposal_nums=(100, 300, 1000),
-                 iou_thrs=np.arange(0.05, 0.51, 0.05)):
+                 iou_thrs=None):
         """Evaluation in COCO protocol.
 
         Args:
@@ -391,6 +391,8 @@ class CameraDatasetNew(CustomDataset):
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
+        if iou_thrs is None:
+            iou_thrs = np.linspace(.5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
@@ -455,11 +457,12 @@ class CameraDatasetNew(CustomDataset):
                     assert len(self.cat_ids) == precisions.shape[2]
 
                     # TODO.draw recall & precision
-                    import numpy as np
                     import matplotlib.pyplot as plt
                     p_array = precisions[0, :, 0, 0, -1]
                     s_array = scores[0, :, 0, 0, -1]
                     r_array = np.arange(0.0, 1.01, 0.01)
+
+                    """
                     plt.xlabel('recall')
                     plt.ylabel('precison')    
                     plt.xlim(0, 1.0)
@@ -468,7 +471,7 @@ class CameraDatasetNew(CustomDataset):
                     plt.plot(r_array, p_array, 'b-', label='IOU=0.05')
                     plt.legend(loc='lower left')
                     plt.savefig('/youtu/xlab-team4/choasliu/research/mmdetection/camera.pdf')
-                                        
+                    """
 
                     results_per_category = []
                     for idx, catId in enumerate(self.cat_ids):
@@ -490,7 +493,7 @@ class CameraDatasetNew(CustomDataset):
                         results_per_category.append(
                             (f'{nm["name"]}', f'{float(ap):0.3f}', f'{str_r}', f'{str_p}', f'{str_s}'))
 
-                    num_columns = 5#min(6, len(results_per_category) * 2)
+                    num_columns = 5 #min(6, len(results_per_category) * 2)
                     results_flatten = list(
                         itertools.chain(*results_per_category))
                     headers = ['category', 'AP', 'recall','precision','score']# * (num_columns // 2)

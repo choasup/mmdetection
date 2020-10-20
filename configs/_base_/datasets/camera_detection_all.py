@@ -1,9 +1,8 @@
 dataset_type = 'CameraDatasetNew'
 
-train_data_root = '/youtu/xlab-team4/share/datasets/camera/all/'
-val_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
-test_data_root = '/youtu/xlab-team4/share/datasets/camera/val_0824/'
-test_data_root = '/youtu/xlab-team4/share/datasets/ken/'
+train_data_root = '/youtu/xlab-team4/share/datasets/xcamera/'
+
+# Pesudo
 #test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/'
 #test_data_root = '/youtu/xlab-team4/share/datasets/pesudo/raws/20200828/'
 
@@ -35,28 +34,21 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        #ann_file=train_data_root + 'annotations/train.json',
-        ann_file=train_data_root + 'annotations/train_0905_filter_subclass_8.json',
-        img_prefix=train_data_root + 'images/images/',
+        ann_file=train_data_root + 'annotations/detection_train_20201019.json',
+        img_prefix=train_data_root + 'images/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        #ann_file=val_data_root + 'val_test.json',
-        #img_prefix=val_data_root + 'images/',
-        ann_file=train_data_root + 'annotations/train_0905_filter_subclass_8.json',
-        img_prefix=train_data_root + 'images/images/',
+        ann_file=train_data_root + 'annotations/detection_val_20201019.json',
+        img_prefix=train_data_root + 'images/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        #ann_file=test_data_root + 'val_test.json',
-        #ann_file=test_data_root + 'merge_20200828-20200829-20200830.json',
-        #ann_file=test_data_root + '20200828.json',
-        #img_prefix=test_data_root + 'images/',
-        ann_file=test_data_root + 'ken_test_cat.json',
-        img_prefix=test_data_root + 'images/',
+        ann_file=train_data_root + 'annotations/detection_val_20201019.json',
+        img_prefix=train_data_root + 'images/',
         pipeline=test_pipeline),)
 evaluation = dict(interval=1, metric='bbox')
