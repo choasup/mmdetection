@@ -9,14 +9,17 @@ class DoubleHeadRoIHead(StandardRoIHead):
     https://arxiv.org/abs/1904.06493
     """
 
-    def __init__(self, reg_roi_scale_factor, **kwargs):
+    def __init__(self, reg_roi_scale_factor, cls_roi_scale_factor=1.0, **kwargs):
         super(DoubleHeadRoIHead, self).__init__(**kwargs)
         self.reg_roi_scale_factor = reg_roi_scale_factor
+        self.cls_roi_scale_factor = cls_roi_scale_factor
 
     def _bbox_forward(self, x, rois):
         """Box head forward function used in both training and testing time."""
         bbox_cls_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], rois)
+            x[:self.bbox_roi_extractor.num_inputs], 
+            rois,
+            roi_scale_factor=self.cls_roi_scale_factor)
         bbox_reg_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs],
             rois,

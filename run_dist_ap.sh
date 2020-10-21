@@ -13,14 +13,19 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #LOGS=../logs/_algo-w1-mhnms-tanners-multi_r50_caffe_fpn_4x4_bn_lr0.02_b4_1x_coco.py
 #OUTPUT=../logs/debug-tanners
 
-CONFIG=configs/_baseline/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
-LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
-OUTPUT=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
+#CONFIG=configs/_baseline/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
+#LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
+#OUTPUT=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
 
 #LOGS=/youtu/xlab-team4/choasliu/research/logs/_sdk_baseline_mumu/
 #OUTPUT=/youtu/xlab-team4/choasliu/research/logs/_sdk_baseline_mumu/
 
-CHECKPOINT=$LOGS/latest.pth
+
+CONFIG=configs/_camera/res2net_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
+LOGS=../logs-camera/rpf-baseline-worker2-res2net_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
+OUTPUT=$LOGS
+
+CHECKPOINT=$LOGS/epoch_19.pth
 
 #python3 tools/test.py $CONFIG $CHECKPOINT \
 #    --show-dir $OUTPUT
