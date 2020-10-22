@@ -1,6 +1,6 @@
 _base_ = [
     './faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/camera_detection_all.py',
+    '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_20e.py', '../_base_/default_runtime.py'
 ]
 
@@ -75,7 +75,7 @@ model = dict(
             conv_out_channels=1024,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes=7,
+            num_classes=80,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0., 0., 0., 0.],
@@ -126,8 +126,8 @@ test_pipeline = [
         ])
 ]
 #train_cfg = dict(rcnn=dict(sampler=dict(type='OHEMSampler')))
-classes = ['camera_gun', 'camera_round', 'camera_other','support_w', 'support_overpass', 'support_dragon', 'support_h']
-data = dict(
-    train=dict(classes=classes, pipeline=train_pipeline),
-    val=dict(classes=classes, pipeline=test_pipeline),
-    test=dict(classes=None, pipeline=test_pipeline))
+#classes = ['camera_gun', 'camera_round', 'camera_other','support_w', 'support_overpass', 'support_dragon', 'support_h']
+#data = dict(
+#    train=dict(classes=classes, pipeline=train_pipeline),
+#    val=dict(classes=classes, pipeline=test_pipeline),
+#    test=dict(classes=None, pipeline=test_pipeline))

@@ -21,11 +21,11 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #OUTPUT=/youtu/xlab-team4/choasliu/research/logs/_sdk_baseline_mumu/
 
 
-CONFIG=configs/_camera/res2net_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
-LOGS=../logs-camera/rpf-baseline-worker2-res2net_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
+CONFIG=./configs/_camera/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_clsroiscale.py
+LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_clsroiscale.yaml/
 OUTPUT=$LOGS
 
-CHECKPOINT=$LOGS/epoch_19.pth
+CHECKPOINT=$LOGS/latest.pth
 
 #python3 tools/test.py $CONFIG $CHECKPOINT \
 #    --show-dir $OUTPUT
