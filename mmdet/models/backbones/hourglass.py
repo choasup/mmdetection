@@ -191,5 +191,4 @@ class HourglassNet(nn.Module):
                     inter_feat) + self.remap_convs[ind](
                         out_feat)
                 inter_feat = self.inters[ind](self.relu(inter_feat))
-
         return out_feats
