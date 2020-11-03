@@ -14,8 +14,8 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #OUTPUT=../logs/debug-tanners
 
 # baseline
-CONFIG=configs/_baseline/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
-LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
+#CONFIG=configs/_baseline/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
+#LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
 
 #LOGS=/youtu/xlab-team4/choasliu/research/logs/_sdk_baseline_mumu/
 #OUTPUT=/youtu/xlab-team4/choasliu/research/logs/_sdk_baseline_mumu/
@@ -32,6 +32,10 @@ LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_larg
 # resnext101-64x4d
 #CONFIG=./configs/_camera/resnext101_64x4d_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk.py
 #LOGS=../logs-camera/rpf-baseline-worker2-resnext101_64x4d_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk.yaml/
+
+# DetectorRS - mumu
+CONFIG=./configs/_baseline/detectoRS_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.py
+LOGS=../logs-camera/rpf-baseline-mumu-detectorRS-dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.yaml/
 
 OUTPUT=$LOGS
 

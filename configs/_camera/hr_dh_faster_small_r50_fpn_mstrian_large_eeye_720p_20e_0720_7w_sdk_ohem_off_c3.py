@@ -1,23 +1,44 @@
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
+    './faster_rcnn_r50_fpn.py',
     '../_base_/datasets/camera_detection_all.py',
     '../_base_/schedules/schedule_20e.py', '../_base_/default_runtime.py'
 ]
-norm_cfg = dict(type='BN', requires_grad=True)
 
 model = dict(
+    pretrained='open-mmlab://msra/hrnetv2_w40',
     backbone=dict(
-        type='DetectoRS_ResNet',
-        conv_cfg=dict(type='ConvAWS'),
-        sac=dict(type='SAC', use_deform=False),
-        stage_with_sac=(False, True, True, True),
-        norm_cfg=norm_cfg,
-        output_img=False),
+        _delete_=True,
+        type='HRNet',
+        extra=dict(
+            stage1=dict(
+                num_modules=1,
+                num_branches=1,
+                block='BOTTLENECK',
+                num_blocks=(4, ),
+                num_channels=(64, )),
+            stage2=dict(
+                num_modules=1,
+                num_branches=2,
+                block='BASIC',
+                num_blocks=(4, 4),
+                num_channels=(40, 80)),
+            stage3=dict(
+                num_modules=4,
+                num_branches=3,
+                block='BASIC',
+                num_blocks=(4, 4, 4),
+                num_channels=(40, 80, 160)),
+            stage4=dict(
+                num_modules=3,
+                num_branches=4,
+                block='BASIC',
+                num_blocks=(4, 4, 4, 4),
+                num_channels=(40, 80, 160, 320)))),
     neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
-        num_outs=5),
+        _delete_=True,
+        type='HRFPN',
+        in_channels=[40, 80, 160, 320],
+        out_channels=256),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -37,10 +58,11 @@ model = dict(
             type='SmoothL1Loss', beta=0.1111111111111111, loss_weight=1.0)),
     roi_head=dict(
         type='DoubleHeadRoIHead',
+        cls_roi_scale_factor=1.0,
         reg_roi_scale_factor=1.3,
         bbox_roi_extractor=dict(
             type='SingleRoIExtractor',
-            roi_layer=dict(type='RoIAlign', out_size=7, sample_num=0),
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
             featmap_strides=[4, 8, 16, 32],
             finest_scale=28),
@@ -54,7 +76,6 @@ model = dict(
             fc_out_channels=1024,
             roi_feat_size=7,
             num_classes=7,
-            norm_cfg=norm_cfg,
             bbox_coder=dict(
                 type='DeltaXYWHBBoxCoder',
                 target_means=[0., 0., 0., 0.],
@@ -79,10 +100,8 @@ train_pipeline = [
         hue_delta=18),
     dict(
         type='Resize',
-        #img_scale=[(1333, 704), (1333, 736),
-        #           (1333, 768), (1333, 800), (2000, 1200), (2666, 1600)],
-        img_scale=[(1280, 560), (1280, 592), (1280, 624), (1280, 656),
-                   (1280, 688), (1280, 720), (1333, 750)],
+        img_scale=[(1333, 704), (1333, 736),
+                   (1333, 768), (1333, 800), (2000, 1200), (2666, 1600)],
         multiscale_mode='value',
         keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -95,7 +114,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1960, 1080),
+        img_scale=(1333, 750),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -106,7 +125,8 @@ test_pipeline = [
             dict(type='Collect', keys=['img']),
         ])
 ]
-classes = ['camera_gun', 'camera_round', 'camera_other','support_w', 'support_overpass', 'support_dragon', 'support_h']
+#train_cfg = dict(rcnn=dict(sampler=dict(type='OHEMSampler')))
+classes = ['camera_gun', 'camera_round', 'camera_other']
 data = dict(
     train=dict(classes=classes, pipeline=train_pipeline),
     val=dict(classes=classes, pipeline=test_pipeline),
