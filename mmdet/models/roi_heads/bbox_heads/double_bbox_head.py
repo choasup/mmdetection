@@ -149,7 +149,17 @@ class DoubleConvFCBBoxHead(BBoxHead):
             if isinstance(m, nn.Linear):
                 xavier_init(m, distribution='uniform')
 
-    def forward(self, x_cls, x_reg):
+    # TODO. check to x_reg is None, adapt to ohem sampler
+    def forward(self, x_cls, x_reg=None):
+        # fc head
+        x_fc = x_cls.view(x_cls.size(0), -1)
+        for fc in self.fc_branch:
+            x_fc = self.relu(fc(x_fc))
+
+        cls_score = self.fc_cls(x_fc)
+        if x_reg == None:
+            return cls_score, None
+
         # conv head
         x_conv = self.res_block(x_reg)
 
@@ -161,12 +171,5 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
         x_conv = x_conv.view(x_conv.size(0), -1)
         bbox_pred = self.fc_reg(x_conv)
-
-        # fc head
-        x_fc = x_cls.view(x_cls.size(0), -1)
-        for fc in self.fc_branch:
-            x_fc = self.relu(fc(x_fc))
-
-        cls_score = self.fc_cls(x_fc)
 
         return cls_score, bbox_pred

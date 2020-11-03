@@ -34,6 +34,7 @@ class OHEMSampler(BaseSampler):
             rois = bbox2roi([bboxes])
             bbox_feats = self.bbox_roi_extractor(
                 feats[:self.bbox_roi_extractor.num_inputs], rois)
+
             cls_score, _ = self.bbox_head(bbox_feats)
             loss = self.bbox_head.loss(
                 cls_score=cls_score,
