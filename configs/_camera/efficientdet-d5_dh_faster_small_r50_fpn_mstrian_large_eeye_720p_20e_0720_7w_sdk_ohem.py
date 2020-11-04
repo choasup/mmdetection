@@ -127,7 +127,7 @@ data = dict(
             dict(
                 type='Resize',
                 img_scale=[(1333, 704), (1333, 736), (1333, 768), (1333, 800),
-                           (2000, 1200),],
+                           (1333, 672), (1333, 640),],
                 multiscale_mode='value',
                 keep_ratio=True),
             dict(type='RandomFlip', flip_ratio=0.5),

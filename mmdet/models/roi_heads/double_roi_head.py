@@ -16,6 +16,21 @@ class DoubleHeadRoIHead(StandardRoIHead):
 
     def _bbox_forward(self, x, rois):
         """Box head forward function used in both training and testing time."""
+        """
+        hr + double head:
+        torch.Size([1, 256, 376, 672])
+        torch.Size([1, 256, 188, 336])
+        torch.Size([1, 256, 94, 168])
+        torch.Size([1, 256, 47, 84])
+        torch.Size([1, 256, 23, 42])
+
+        efficient net:
+        torch.Size([1, 64, 144, 256])
+        torch.Size([1, 64, 72, 128])
+        torch.Size([1, 64, 36, 64])
+        torch.Size([1, 64, 18, 32])
+        torch.Size([1, 64, 9, 16])
+        """
         bbox_cls_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], 
             rois,

@@ -375,15 +375,6 @@ class EfficientNet(nn.Module):
         del last_x
         return feature_maps[1:]
 
-    def init_weights(self, pretrained):
-        state_dict = torch.load(pretrained)
-        try:
-            ret = self.load_state_dict(state_dict, strict=False)
-            print(ret)
-        except RuntimeError as e:
-            print('Ignoring ' + str(e) + '"')
-
-
 @BACKBONES.register_module()
 class EfficientDetBackbone(nn.Module):
     def __init__(self, compound_coef=0, load_weights=False, **kwargs):
@@ -420,7 +411,8 @@ class EfficientDetBackbone(nn.Module):
         #            use_p8=compound_coef > 7)
         #      for _ in range(self.fpn_cell_repeats[compound_coef])])
 
-        self.backbone_net = EfficientNet(self.backbone_compound_coef[compound_coef], load_weights)
+        self.backbone_net = EfficientNet(self.backbone_compound_coef[compound_coef])
+        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
 
     def freeze_bn(self):
         for m in self.modules():
@@ -431,11 +423,35 @@ class EfficientDetBackbone(nn.Module):
         max_size = inputs.shape[-1]
         _, p3, p4, p5 = self.backbone_net(inputs)
 
+        # TODO. add upsample
+        p3 = self.upsample(p3)
+        p4 = self.upsample(p4)
+        p5 = self.upsample(p5)
+
         features = (p3, p4, p5)
         return features
 
     def init_weights(self, pretrained):
-        self.backbone_net.init_weights(pretrained)
+        if pretrained is None:
+            return
+
+        state_dict = torch.load(pretrained)
+
+        pops = []
+        for key, w in state_dict.items():
+            if key.split('.')[0] == 'classifier' or \
+               key.split('.')[0] == 'regressor' or \
+               key.split('.')[0] == 'bifpn':
+                pops.append(key)
+
+        for key in pops:
+            state_dict.pop(key)
+
+        try:
+            ret = self.load_state_dict(state_dict, strict=False)
+            print(ret)
+        except RuntimeError as e:
+            print('Ignoring ' + str(e) + '"')
 
 if __name__ == '__main__':
     from tensorboardX import SummaryWriter
