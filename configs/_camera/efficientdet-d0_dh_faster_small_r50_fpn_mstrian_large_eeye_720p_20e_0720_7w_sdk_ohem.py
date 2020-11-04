@@ -191,14 +191,14 @@ data = dict(
                         mean=[109.675, 116.28, 115.53],
                         std=[71.395, 59.12, 62.375],
                         to_rgb=True),
-                    dict(type='Pad', size_divisor=32),
+                    dict(type='Pad', size_divisor=128),
                     dict(type='ImageToTensor', keys=['img']),
                     dict(type='Collect', keys=['img'])
                 ])
         ],
         classes=None))
 evaluation = dict(interval=1, metric='bbox')
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='step',

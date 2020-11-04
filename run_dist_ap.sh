@@ -34,18 +34,22 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #LOGS=../logs-camera/rpf-baseline-worker2-resnext101_64x4d_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk.yaml/
 
 # DetectorRS - mumu
-CONFIG=./configs/_baseline/detectoRS_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.py
-LOGS=../logs-camera/rpf-baseline-mumu-detectorRS-dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.yaml/
+#CONFIG=./configs/_baseline/detectoRS_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.py
+#LOGS=../logs-camera/rpf-baseline-mumu-detectorRS-dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_without_dcn_anchors.yaml/
+
+# effientnet
+CONFIG=./configs/_camera/efficientdet-d0_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.py
+LOGS=../logs-camera/rpf-baseline-worker2-efficientdet-d0_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem.yaml/
 
 OUTPUT=$LOGS
 
 CHECKPOINT=$LOGS/latest.pth
 
-#python3 tools/test.py $CONFIG $CHECKPOINT \
-#    --out $LOGS/results.pkl --eval bbox --options "classwise=True"
+python3 tools/test.py $CONFIG $CHECKPOINT \
+    --out $LOGS/results.pkl --eval bbox --options "classwise=True"
 
 #sh tools/dist_test.sh $CONFIG $CHECKPOINT \
 #    8 --show-dir $OUTPUT
 
-sh tools/dist_test.sh $CONFIG $CHECKPOINT \
-    8 --out $LOGS/results.pkl --eval bbox --options "classwise=True" 
+#sh tools/dist_test.sh $CONFIG $CHECKPOINT \
+#    8 --out $LOGS/results.pkl --eval bbox --options "classwise=True" 

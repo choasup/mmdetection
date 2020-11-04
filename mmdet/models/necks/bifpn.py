@@ -370,6 +370,19 @@ class BiFPNBackbone(nn.Module):
               for _ in range(self.fpn_cell_repeats[compound_coef])])
 
     def forward(self, inputs):
+        """
+        inputs:
+            torch.Size([1, 40, 96, 176])
+            torch.Size([1, 112, 48, 88])
+            torch.Size([1, 320, 24, 44])
+
+        features:
+            torch.Size([1, 64, 96, 176])
+            torch.Size([1, 64, 48, 88])
+            torch.Size([1, 64, 24, 44])
+            torch.Size([1, 64, 12, 22])
+            torch.Size([1, 64, 6, 11])
+        """
         features = self.bifpn(inputs)
         return features
 
