@@ -1,5 +1,5 @@
 _base_ = [
-    './faster_rcnn_r50_fpn.py',
+    './arpn_faster_rcnn_r50_fpn.py',
     '../_base_/datasets/camera_detection_all.py',
     '../_base_/schedules/schedule_20e.py', '../_base_/default_runtime.py'
 ]
