@@ -5,8 +5,9 @@ from .base_assigner import BaseAssigner
 from .center_region_assigner import CenterRegionAssigner
 from .max_iou_assigner import MaxIoUAssigner
 from .point_assigner import PointAssigner
+from .free_assigner import FreeAssigner
 
 __all__ = [
     'BaseAssigner', 'MaxIoUAssigner', 'ApproxMaxIoUAssigner', 'AssignResult',
-    'PointAssigner', 'ATSSAssigner', 'CenterRegionAssigner'
+    'PointAssigner', 'ATSSAssigner', 'CenterRegionAssigner', 'FreeAssigner',
 ]
