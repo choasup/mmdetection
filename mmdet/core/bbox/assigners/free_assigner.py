@@ -46,7 +46,7 @@ class FreeAssigner(BaseAssigner):
                  ignore_wrt_candidates=True,
                  match_low_quality=True,
                  gpu_assign_thr=-1,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+                 iou_calculator=dict(type='L2DisOverlaps')):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -90,7 +90,6 @@ class FreeAssigner(BaseAssigner):
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
-        from IPython import embed; embed()
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
             gt_bboxes.shape[0] > self.gpu_assign_thr) else False
         # compute overlap and assign gt on CPU when number of GT is large
@@ -105,6 +104,7 @@ class FreeAssigner(BaseAssigner):
 
         overlaps = self.iou_calculator(gt_bboxes, bboxes)
 
+        # need to develop if ignore bboxes
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
             if self.ignore_wrt_candidates:
@@ -143,6 +143,7 @@ class FreeAssigner(BaseAssigner):
                                              -1,
                                              dtype=torch.long)
 
+        # 0 is bg, -1 is ignored
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
@@ -179,6 +180,7 @@ class FreeAssigner(BaseAssigner):
                              & (max_overlaps < self.neg_iou_thr[1])] = 0
 
         # 3. assign positive: above positive IoU threshold
+        # get the max iou gt ind, and assign to anchor
         pos_inds = max_overlaps >= self.pos_iou_thr
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
@@ -191,6 +193,7 @@ class FreeAssigner(BaseAssigner):
             # However, if GT bbox 2's gt_argmax_overlaps = A, bbox A's
             # assigned_gt_inds will be overwritten to be bbox B.
             # This might be the reason that it is not used in ROI Heads.
+            # assign all 
             for i in range(num_gts):
                 if gt_max_overlaps[i] >= self.min_pos_iou:
                     if self.gt_max_assign_all:
