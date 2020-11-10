@@ -44,8 +44,17 @@ export TORCH_HOME=/youtu/xlab-team4/share/pretrained
 #CONFIG=./configs/_camera/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_on.py
 #LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_on.yaml/
 
-CONFIG=./configs/_camera/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_arpn.py
-LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_arpn.yaml/
+#CONFIG=./configs/_camera/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_arpn.py
+#LOGS=../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_arpn.yaml/
+
+#CONFIG=./configs/_assigner/faster_rcnn/faster_rcnn_r50_fpn_1x_tinycoco.py
+#LOGS=./../logs-tinycoco/rpf-tinycoco-worker1-faster_rcnn_r50_fpn_1x_tinycoco.yaml/
+
+#CONFIG=./configs/_assigner/retinanet/retinanet_r50_fpn_1x_tinycoco.py
+#LOGS=./../logs-tinycoco/rpf-tinycoco-worker1-retinanet_r50_fpn_1x_tinycoco.yaml/
+
+CONFIG=./configs/_camera/hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_on_assign.py
+LOGS=./../logs-camera/rpf-baseline-worker2-hr_dh_faster_small_r50_fpn_mstrian_large_eeye_720p_20e_0720_7w_sdk_ohem_on_assign.yaml
 
 OUTPUT=$LOGS
 

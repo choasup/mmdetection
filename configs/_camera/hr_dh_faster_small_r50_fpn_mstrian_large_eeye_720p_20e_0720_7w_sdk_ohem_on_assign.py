@@ -165,4 +165,4 @@ classes = ['camera_gun', 'camera_round', 'camera_other','support_w', 'support_ov
 data = dict(
     train=dict(classes=classes, pipeline=train_pipeline),
     val=dict(classes=classes, pipeline=test_pipeline),
-    test=dict(classes=None, pipeline=test_pipeline))
+    test=dict(classes=classes, pipeline=test_pipeline))
