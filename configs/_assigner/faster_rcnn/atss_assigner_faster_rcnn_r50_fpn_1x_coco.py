@@ -1,5 +1,5 @@
 _base_ = [
-    '../../_base_/datasets/tinycoco_detection.py',
+    '../../_base_/datasets/coco_detection.py',
     '../../_base_/schedules/schedule_1x.py', '../../_base_/default_runtime.py'
 ]
 
@@ -21,7 +21,7 @@ model = dict(
         out_channels=256,
         num_outs=5),
     rpn_head=dict(
-        type='RPNHead',
+        type='ARPNHead',
         in_channels=256,
         feat_channels=256,
         anchor_generator=dict(
@@ -59,18 +59,20 @@ model = dict(
             loss_bbox=dict(type='L1Loss', loss_weight=1.0))))
 train_cfg = dict(
     rpn=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.7,
-            neg_iou_thr=0.3,
-            min_pos_iou=0.3,
-            match_low_quality=True,
-            ignore_iof_thr=-1),
+        #assigner=dict(
+        #    type='MaxIoUAssigner',
+        #    pos_iou_thr=0.7,
+        #    neg_iou_thr=0.3,
+        #    min_pos_iou=0.3,
+        #    match_low_quality=True,
+        #    ignore_iof_thr=-1),
+        assigner=dict(type='ATSSAssigner', topk=9),
         sampler=dict(
             type='RandomSampler',
             num=256,
             pos_fraction=0.5,
             neg_pos_ub=-1,
+            event='/youtu/xlab-team4/choasliu/research/logs-events/frcnn/atss_rpn',
             add_gt_as_proposals=False),
         allowed_border=-1,
         pos_weight=-1,
@@ -95,6 +97,7 @@ train_cfg = dict(
             num=512,
             pos_fraction=0.25,
             neg_pos_ub=-1,
+            event='/youtu/xlab-team4/choasliu/research/logs-events/frcnn/atss_rcnn',
             add_gt_as_proposals=True),
         pos_weight=-1,
         debug=False))

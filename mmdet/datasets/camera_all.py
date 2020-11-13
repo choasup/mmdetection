@@ -462,6 +462,8 @@ class CameraDatasetNew(CustomDataset):
                     s_array = scores[0, :, 0, 0, -1]
                     r_array = np.arange(0.0, 1.01, 0.01)
 
+                    #from IPython import embed; embed()  
+                  
                     """
                     plt.xlabel('recall')
                     plt.ylabel('precison')    
@@ -484,7 +486,8 @@ class CameraDatasetNew(CustomDataset):
      
                         precision = precision[precision > -1]
                         if precision.size:
-                            ap = np.mean(precision)
+                            #ap = np.mean(precision)
+                            ap = np.mean(p)
                         else:
                             ap = float('nan')
                         str_p = '\n'.join(str(round(x, 4)) for x in p[::10])
@@ -496,7 +499,7 @@ class CameraDatasetNew(CustomDataset):
                     num_columns = 5 #min(6, len(results_per_category) * 2)
                     results_flatten = list(
                         itertools.chain(*results_per_category))
-                    headers = ['category', 'AP', 'recall','precision','score']# * (num_columns // 2)
+                    headers = ['category', 'AP@IOU50', 'recall@IOU50','precision@IOU50','score@IOU50']# * (num_columns // 2)
                     results_2d = itertools.zip_longest(*[
                         results_flatten[i::num_columns]
                         for i in range(num_columns)

@@ -16,7 +16,7 @@ model = dict(
         out_channels=256,
         num_outs=5),
     rpn_head=dict(
-        type='RPNHead',
+        type='ARPNHead',
         in_channels=256,
         feat_channels=256,
         anchor_generator=dict(
@@ -33,17 +33,13 @@ model = dict(
         loss_bbox=dict(type='L1Loss', loss_weight=1.0)))
 train_cfg = dict(
     rpn=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.7,
-            neg_iou_thr=0.3,
-            min_pos_iou=0.3,
-            ignore_iof_thr=-1),
+        assigner=dict(type='ATSSAssigner', topk=9),
         sampler=dict(
             type='RandomSampler',
             num=256,
             pos_fraction=0.5,
             neg_pos_ub=-1,
+            event='/youtu/xlab-team4/choasliu/research/logs-events/atss-tiny',
             add_gt_as_proposals=False),
         allowed_border=0,
         pos_weight=-1,
@@ -56,7 +52,6 @@ test_cfg = dict(
         max_num=1000,
         nms_thr=0.7,
         min_bbox_size=0))
-
 dataset_type = 'CocoDataset'
 data_root = '/youtu/xlab-team4/share/datasets/coco/'
 img_norm_cfg = dict(
@@ -94,6 +89,29 @@ test_pipeline = [
             dict(type='Collect', keys=['img'])
         ])
 ]
+
+classes = [
+    'sports ball',
+    'kite',
+    'traffic light',
+    'remote',
+    'bird',
+    'book',
+    'toothbrush',
+    'spoon',
+    'skis',
+    'knife',
+    'baseball glove',
+    'cell phone',
+    'car',
+    'baseball bat',
+    'bottle',
+    'handbag',
+    'fork',
+    'tie',
+    'mouse',
+    'frisbee',]
+
 data = dict(
     samples_per_gpu=1,
     workers_per_gpu=2,
@@ -102,6 +120,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_train2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/train2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True, with_label=False),
@@ -121,6 +140,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_val2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/val2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -145,6 +165,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_val2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/val2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -181,5 +202,5 @@ log_level = 'INFO'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
-work_dir = '/youtu/xlab-team4/choasliu/research/logs-coco/rpf-coco-worker1-rpn_r50_fpn_1x_coco.yaml'
+work_dir = '/youtu/xlab-team4/choasliu/research/logs-coco/rpf-coco-worker1-arpn_r50_fpn_1x_coco.yaml'
 gpu_ids = range(0, 1)

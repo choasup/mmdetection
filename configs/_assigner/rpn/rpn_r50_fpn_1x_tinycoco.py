@@ -44,6 +44,7 @@ train_cfg = dict(
             num=256,
             pos_fraction=0.5,
             neg_pos_ub=-1,
+            event='/youtu/xlab-team4/choasliu/research/logs-events/rpn-tiny',
             add_gt_as_proposals=False),
         allowed_border=0,
         pos_weight=-1,
@@ -61,6 +62,29 @@ dataset_type = 'CocoDataset'
 data_root = '/youtu/xlab-team4/share/datasets/coco/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+classes = [
+    'sports ball',
+    'kite',
+    'traffic light',
+    'remote',
+    'bird',
+    'book',
+    'toothbrush',
+    'spoon',
+    'skis',
+    'knife',
+    'baseball glove',
+    'cell phone',
+    'car',
+    'baseball bat',
+    'bottle',
+    'handbag',
+    'fork',
+    'tie',
+    'mouse',
+    'frisbee',]
+
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_label=False),
@@ -102,6 +126,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_train2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/train2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True, with_label=False),
@@ -121,6 +146,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_val2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/val2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(
@@ -145,6 +171,7 @@ data = dict(
         ann_file=
         '/youtu/xlab-team4/share/datasets/coco/annotations/instances_val2017.json',
         img_prefix='/youtu/xlab-team4/share/datasets/coco/val2017/',
+        classes=classes,
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(

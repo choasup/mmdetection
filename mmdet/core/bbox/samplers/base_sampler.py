@@ -4,6 +4,7 @@ import torch
 
 from .sampling_result import SamplingResult
 
+from torch.utils.tensorboard import SummaryWriter
 
 class BaseSampler(metaclass=ABCMeta):
     """Base class of samplers."""
