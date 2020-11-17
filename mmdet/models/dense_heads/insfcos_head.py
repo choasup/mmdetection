@@ -11,7 +11,7 @@ INF = 1e8
 
 
 @HEADS.register_module()
-class FCOSHead(AnchorFreeHead):
+class INSFCOSHead(AnchorFreeHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 
     The FCOS head does not use anchor boxes. Instead bounding boxes are
@@ -47,7 +47,7 @@ class FCOSHead(AnchorFreeHead):
             Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
 
     Example:
-        >>> self = FCOSHead(11, 7)
+        >>> self = INSFCOSHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
         >>> cls_score, bbox_pred, centerness = self.forward(feats)
         >>> assert len(cls_score) == len(self.scales)
@@ -142,6 +142,16 @@ class FCOSHead(AnchorFreeHead):
         else:
             centerness = self.conv_centerness(cls_feat)
 
+        # instance graph
+        ins_feat = reg_feat
+        grid_feat = ins_feat.reshape([ins_feat.shape[0], ins_feat.shape[1], -1])
+
+        #grid_relations = []
+        #for y_feat in grid_feat:
+        #    x_feat = torch.transpose(y_feat, 0, 1)
+        #    grid_relations.append(torch.matmul(x_feat, y_feat).unsqueeze(0))
+        #ins_grid = torch.cat(grid_relations, 0)
+
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()
@@ -151,13 +161,14 @@ class FCOSHead(AnchorFreeHead):
                 bbox_pred *= stride
         else:
             bbox_pred = bbox_pred.exp()
-        return cls_score, bbox_pred, centerness
+        return cls_score, bbox_pred, centerness, grid_feat
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses', 'ins_grid'))
     def loss(self,
              cls_scores,
              bbox_preds,
              centernesses,
+             grid_feats,
              gt_bboxes,
              gt_labels,
              img_metas,
@@ -184,12 +195,26 @@ class FCOSHead(AnchorFreeHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        assert len(cls_scores) == len(bbox_preds) == len(centernesses)
+        assert len(cls_scores) == len(bbox_preds) == len(centernesses) == len(grid_feats)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
                                            bbox_preds[0].device)
-        labels, bbox_targets = self.get_targets(all_level_points, gt_bboxes,
+        labels, bbox_targets, grid_targets = self.get_targets(all_level_points, gt_bboxes,
                                                 gt_labels)
+
+        # TODO. improve grid loss
+        # loss grid
+        # grid relations
+        all_lvl_grid_feats = torch.cat(grid_feats, -1) 
+
+        grid_relations = []
+        for y_feat in all_lvl_grid_feats:
+            x_feat = torch.transpose(y_feat, 0, 1)
+            grid_relations.append(torch.matmul(x_feat, y_feat).unsqueeze(0).sigmoid())
+        grid_graph = torch.cat(grid_relations, 0)
+
+        # grid loss
+        loss_instance = self.loss_centerness(grid_graph, grid_targets)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -219,6 +244,7 @@ class FCOSHead(AnchorFreeHead):
         pos_inds = ((flatten_labels >= 0)
                     & (flatten_labels < bg_class_ind)).nonzero().reshape(-1)
         num_pos = len(pos_inds)
+
         loss_cls = self.loss_cls(
             flatten_cls_scores, flatten_labels,
             avg_factor=num_pos + num_imgs)  # avoid num_pos is 0
@@ -248,7 +274,8 @@ class FCOSHead(AnchorFreeHead):
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
-            loss_centerness=loss_centerness)
+            loss_centerness=loss_centerness,
+            loss_instance=loss_instance,)
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
     def get_bboxes(self,
@@ -434,13 +461,16 @@ class FCOSHead(AnchorFreeHead):
         num_points = [center.size(0) for center in points]
 
         # get labels and bbox_targets of each image
-        labels_list, bbox_targets_list = multi_apply(
+        labels_list, bbox_targets_list, grid_targets_list = multi_apply(
             self._get_target_single,
             gt_bboxes_list,
             gt_labels_list,
             points=concat_points,
             regress_ranges=concat_regress_ranges,
             num_points_per_lvl=num_points)
+        
+        # concat grid targets
+        concat_grid_targets = torch.cat(grid_targets_list, 0) 
 
         # split to per img, per level
         labels_list = [labels.split(num_points, 0) for labels in labels_list]
@@ -460,7 +490,8 @@ class FCOSHead(AnchorFreeHead):
             if self.norm_on_bbox:
                 bbox_targets = bbox_targets / self.strides[i]
             concat_lvl_bbox_targets.append(bbox_targets)
-        return concat_lvl_labels, concat_lvl_bbox_targets
+
+        return concat_lvl_labels, concat_lvl_bbox_targets, concat_grid_targets
 
     def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
                            num_points_per_lvl):
@@ -487,6 +518,8 @@ class FCOSHead(AnchorFreeHead):
         right = gt_bboxes[..., 2] - xs
         top = ys - gt_bboxes[..., 1]
         bottom = gt_bboxes[..., 3] - ys
+
+        # [num_points, num_gts, 4(lrbt)]
         bbox_targets = torch.stack((left, top, right, bottom), -1)
 
         if self.center_sampling:
@@ -544,7 +577,51 @@ class FCOSHead(AnchorFreeHead):
         labels[min_area == INF] = self.background_label  # set as BG
         bbox_targets = bbox_targets[range(num_points), min_area_inds]
 
-        return labels, bbox_targets
+        
+        # for each level grid instance
+        has_instance = (labels != self.background_label)
+        instance_inds = min_area_inds
+        instance_inds[has_instance == False] = -1
+ 
+        index = torch.where(instance_inds != -1)[0]
+        value = instance_inds[index]
+
+        # for each level grid instance
+        """
+        grid_targets = []
+        start = 0
+        for num in num_points_per_lvl:
+            lvl_index = index[(index >= start) * (index < start + num)]
+            lvl_value = instance_inds[lvl_index]
+            instances = set(list(lvl_value.cpu().data.numpy()))
+            target = torch.zeros([num, num]).to(device=labels.device)
+
+            for p in instances:
+                group = lvl_index[lvl_value == p]
+                group_x = group.unsqueeze(-1).expand(-1, len(group)).unsqueeze(-1)
+                group_y = torch.transpose(group_x, 0, 1)
+                group_x = group_x.reshape(-1, 1) - start
+                group_y = group_y.reshape(-1, 1) - start
+                target[group_x, group_y] = 1
+
+            start = start + num
+            grid_targets.append(target)
+        """
+
+        # for all level
+        num = sum(num_points_per_lvl)
+        grid_targets = torch.zeros([num, num]).to(device=labels.device)
+        instances = set(list(value.cpu().data.numpy()))     
+        for p in instances:
+            group = index[value == p]
+            group_x = group.unsqueeze(-1).expand(-1, len(group)).unsqueeze(-1)
+            group_y = torch.transpose(group_x, 0, 1)
+            group_x = group_x.reshape(-1, 1)
+            group_y = group_y.reshape(-1, 1)
+            grid_targets[group_x, group_y] = 1
+        grid_targets = grid_targets.unsqueeze(0)
+
+        return labels, bbox_targets, grid_targets
 
     def centerness_target(self, pos_bbox_targets):
         """Compute centerness targets.

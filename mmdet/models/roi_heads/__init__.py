@@ -15,6 +15,8 @@ from .roi_extractors import SingleRoIExtractor
 from .shared_heads import ResLayer
 from .transformer_roi_head import TransformerRoIHead
 
+from .astandard_roi_head import AStandardRoIHead
+
 __all__ = [
     'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'MaskScoringRoIHead',
     'HybridTaskCascadeRoIHead', 'GridRoIHead', 'ResLayer', 'BBoxHead',
@@ -22,5 +24,5 @@ __all__ = [
     'DoubleConvFCBBoxHead', 'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead',
     'GridHead', 'MaskIoUHead', 'SingleRoIExtractor', 'PISARoIHead',
     'PointRendRoIHead', 'MaskPointHead', 'CoarseMaskHead', 'DynamicRoIHead',
-    'TransformerRoIHead',
+    'TransformerRoIHead', 'AStandardRoIHead',
 ]
