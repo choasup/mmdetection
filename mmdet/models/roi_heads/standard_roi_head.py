@@ -5,6 +5,7 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
+from mmdet.core.bbox.iou_calculators import build_iou_calculator
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -18,6 +19,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.bbox_assigner = build_assigner(self.train_cfg.assigner)
             self.bbox_sampler = build_sampler(
                 self.train_cfg.sampler, context=self)
+
+        self.iou_calculator = build_iou_calculator(dict(type='BboxOverlaps2D'))
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
         """Initialize ``bbox_head``"""
@@ -67,6 +70,15 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             outs = outs + (mask_results['mask_pred'], )
         return outs
 
+    def sort_inplace(self,
+                     proposal_list,
+                     gt_bboxes):
+        overlaps = self.iou_calculator(gt_bboxes, proposal_list) 
+        from IPython import embed; embed()
+        proposal_list = torch.zeros_like(proposal_list)
+
+        return proposal_list
+   
     def forward_train(self,
                       x,
                       img_metas,
@@ -102,6 +114,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
             sampling_results = []
             for i in range(num_imgs):
+                # TODO. by choasliu
+                # input: proposal_list[i], gt_bboxes[i] => new proposal_list
+                proposal_list[i] = self.sort_inplace(proposal_list[i], gt_bboxes[i])
                 assign_result = self.bbox_assigner.assign(
                     proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
                     gt_labels[i])
